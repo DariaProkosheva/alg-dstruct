@@ -1,7 +1,0 @@
-A.sln
-Debug/
-packages/
-.vs/
-Sample-Test1/Debug/
-Sample-Test1/*.config
-Sample-Test1/*.vcxproj*
