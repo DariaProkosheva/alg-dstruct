@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#pragma warning (disable:4996)
 
 typedef struct tree {
 	char* word;
@@ -9,12 +10,13 @@ typedef struct tree {
 	struct tree* right;
 } tree;
 
-tree* CreateTree(void) {
+tree* CreateTree(char* word) {
 	tree* Tree = (tree*)malloc(sizeof(tree));
 	if (Tree == NULL) {
 		printf("MEMMORY_ERROR");
 		return NULL;
 	}
+	Tree->word = word; 
 	Tree->left = NULL;
 	Tree->right = NULL;
 	return Tree;
@@ -27,8 +29,45 @@ void DestroyTree(tree* root) {
 		DestroyTree(root->left);
 		DestroyTree(root->right);
 	}
+	free(root->word);
 	free(root);
 	return;
+}
+void AddElement(tree** Tree, char* word) {
+	tree* node = CreateTree(word);
+	if (node == NULL) {
+		printf("MEMMORY_ERROR");
+		return NULL;
+	}
+	if (*Tree == NULL) {
+		*Tree = node;
+		return;
+	}
+	tree* t = *Tree;
+	int num = 0;
+	while (t != NULL) {
+		if ((num = strcmp((node->word), (t->word))) < 0) {
+			if (t->right != NULL)
+				t = t->right;
+			else {
+				t->right = node;
+				return;
+			}
+		}
+		else
+			if (num == 0) {
+				DestroyTree(node);
+				return;
+			}
+			else
+				if (t->left != NULL)
+					t = t->left;
+				else {
+					t->left = node;
+					return;
+				}
+	}
+
 }
 
 int FindWidth(tree* root) {
@@ -52,29 +91,25 @@ int FindWidth(tree* root) {
 void TreePrint(tree* tree, int n) {
 	if (tree != NULL)
 	{
-		TreePrint(tree->right, n + 2);
+		TreePrint(tree->left, n + 2);
 		for (int i = 0; i < n; i++)
 			printf(" ");
 		printf("%s\n", tree->word);
 		for (int i = 0; i < n; i++)
 			printf(" ");
 		printf("%i\n", tree->size);
-		TreePrint(tree->left, n + 2);
+		TreePrint(tree->right, n+2);
 	}
 	else
 		return;
 }
 
 int main(void) {
-	tree* Node1 = CreateTree();
-	tree* Node2 = CreateTree();
-	tree* Node3 = CreateTree();
-	Node1->word = "hello";
-	Node2->word = "hi";
-	Node3->word = "privet";
-	Node1->left = Node2;
-	Node1->right = Node3;
-	FindWidth(Node1);
-	TreePrint(Node1, 0);
+	tree* Tree = NULL;
+	AddElement(&Tree, "hello");
+	AddElement(&Tree, "hi");
+	AddElement(&Tree, "privet");
+	FindWidth(Tree);
+	TreePrint(Tree, 0);
 	return 0;
 }
