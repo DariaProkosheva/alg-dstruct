@@ -1,115 +1,271 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#pragma warning (disable:4996)
+#include "Header.h"
 
-typedef struct tree {
-	char* word;
-	int size;
-	struct tree* left;
-	struct tree* right;
-} tree;
-
-tree* CreateTree(char* word) {
-	tree* Tree = (tree*)malloc(sizeof(tree));
-	if (Tree == NULL) {
-		printf("MEMMORY_ERROR");
-		return NULL;
-	}
-	Tree->word = word; 
-	Tree->left = NULL;
-	Tree->right = NULL;
-	return Tree;
-}
-
-void DestroyTree(tree* root) {
-	if (root == NULL)
-		return;
-	else {
-		DestroyTree(root->left);
-		DestroyTree(root->right);
-	}
-	free(root->word);
-	free(root);
-	return;
-}
-void AddElement(tree** Tree, char* word) {
-	tree* node = CreateTree(word);
+Node* CreateNode(int key, Node* parent, char col) {
+	Node* node = (Node*)malloc(sizeof(Node));
 	if (node == NULL) {
-		printf("MEMMORY_ERROR");
-		return NULL;
+		printf("Memmory error");
+		exit(1);
 	}
-	if (*Tree == NULL) {
-		*Tree = node;
-		return;
-	}
-	tree* t = *Tree;
-	int num = 0;
-	while (t != NULL) {
-		if ((num = strcmp((node->word), (t->word))) < 0) {
-			if (t->right != NULL)
-				t = t->right;
+	node->key = key;
+	node->color = col;
+	node->left = NULL;
+	node->right = NULL;
+	node->parent = parent;
+	return node;
+}
+
+void RightRotate(Node* tree, Node* node) {
+	Node* left = node->left;
+	node->left = left->right;
+	if (node->left != NULL)
+		node->left->parent = node;
+	left->parent = node->parent;
+	if (node->parent == NULL)
+		tree = left;
+	else if (node == node->parent->left)
+		node->parent->left = left;
+	else
+		node->parent->right = left;
+	left->right = node;
+	node->parent = left;
+}
+
+void LeftRotate(Node* tree, Node* node) {
+	Node* right = node->right;
+	node->right = right->left;
+	if (node->right == NULL)
+		node->right->parent = node;
+	right->parent = node->parent;
+	if (node->parent != NULL)
+		tree = right;
+	else if (node == node->parent->left)
+		node->parent->left = right;
+	else
+		node->parent->right = right;
+	right->left = node;
+	node->parent = right;
+}
+
+Node* FixUp(Node* tree, Node* x) {
+	while (x != tree && x->parent->color == RED) {
+		if (x->parent == x->parent->parent->left) {
+			Node* y = x->parent->parent->right;
+			if (y != NULL && y->color == RED) {
+				x->parent->color = BLACK;
+				y->color = BLACK;
+				x->parent->parent->color = RED;
+				x = x->parent->parent;
+			}
 			else {
-				t->right = node;
-				return;
+				if (x == x->parent->right) {
+					x = x->parent;
+					LeftRotate(tree, x);
+				}
+				x->parent->color = BLACK;
+				x->parent->parent->color = RED;
+				RightRotate(tree, x->parent->parent);
 			}
 		}
-		else
-			if (num == 0) {
-				DestroyTree(node);
-				return;
+		else {
+			Node* y = x->parent->parent->left;
+			if (y != NULL && y->color == RED) {
+				x->parent->color = BLACK;
+				y->color = BLACK;
+				x->parent->parent->color = RED;
+				x = x->parent->parent;
 			}
-			else
-				if (t->left != NULL)
-					t = t->left;
-				else {
-					t->left = node;
-					return;
+			else {
+				if (x == x->parent->left) {
+					x = x->parent;
+					RightRotate(tree, x);
 				}
+				x->parent->color = BLACK;
+				x->parent->parent->color = RED;
+				LeftRotate(tree, x->parent->parent);
+			}
+		}
 	}
-
+	tree->color = BLACK;
+	return tree;
 }
 
-int FindWidth(tree* root) {
-	int width = 0;
-	if (root == NULL)
-		return width;
+Node* Insert(Node* tree, int key) {
+	if (tree == NULL)
+		tree = CreateNode(key, NULL, BLACK);
 	else {
-		int left = FindWidth(root->left);
-		//printf("%d ", left);
-		width += left;
-		int right = FindWidth(root->right);
-		//printf("%d", right);
-		width += right;
-		width += strlen(root->word);
-		root->size = width;
-		//printf("%d", width);
+		Node* cur = tree;
+		Node* par = NULL;
+		while (cur != NULL) {
+			if (cur->key == key)
+				return tree;
+			par = cur;
+			if (key < cur->key)
+				cur = cur->left;
+			else
+				cur = cur->right;
+		}
+		Node* node = (Node*)malloc(sizeof(Node));
+		if (node == NULL) {
+			printf("Memmory error");
+			exit(1);
+		}
+		node = CreateNode(key, par, RED);
+		if (par == NULL)
+			tree = node;
+		else {
+			if (key < par->key)
+				par->left = node;
+			else
+				par->right = node;
+		}
+		tree = FixUp(tree, node);
+		}
+	return tree;
+};
+
+Node* DeleteFixup(Node* tree, Node* x) {
+	while (x != tree && x->color == BLACK) {
+		if (x->parent->right != NULL && x == x->parent->left) {
+			Node* y = x->parent->right;
+			if (y->color == RED) {
+				y->color = BLACK;
+				x->parent->color = RED;
+				LeftRotate(tree, x->parent);
+				y = x->parent->right;
+			}
+			if (y->left != NULL && y->right != NULL && y->left->color == BLACK && y->right->color == BLACK) {
+				y->color = RED;
+				x = x->parent;
+			}
+			else {
+				if (y->left != NULL && y->right != NULL && y->right->color == BLACK) {
+					y->left->color = BLACK;
+					y->color = RED;
+					RightRotate(tree, y);
+					y = x->parent->right;
+				}
+
+				if (y->right != NULL) {
+					y->color = x->parent->color;
+					x->parent->color = BLACK;
+					y->right->color = BLACK;
+					LeftRotate(tree, x->parent);
+				}
+				x = tree;
+			}
+		}
+		else if (x->parent->left) {
+			Node* y = x->parent->left;
+			if (y->color == RED) {
+				y->color = BLACK;
+				x->parent->color = RED;
+				RightRotate(tree, x->parent);
+				y = x->parent->left;
+			}
+
+			if (y->left != NULL && y->right != NULL && y->right->color == BLACK && y->left->color == BLACK) {
+				y->color = RED;
+				x = x->parent;
+			}
+			else {
+
+				if (y->left != NULL && y->right != NULL && y->left->color == BLACK) {
+					y->right->color = BLACK;
+					y->color = RED;
+					LeftRotate(tree, y);
+					y = x->parent->left;
+				}
+
+				if (y->left) {
+					y->color = x->parent->color;
+					x->parent->color = BLACK;
+					y->left->color = BLACK;
+					RightRotate(tree, x->parent);
+				}
+				x = tree;
+			}
+		}
 	}
-	return width;
+	x->color = BLACK;
+	return tree;
 }
 
-void TreePrint(tree* tree, int n) {
-	if (tree != NULL)
-	{
-		TreePrint(tree->left, n + 2);
-		for (int i = 0; i < n; i++)
-			printf(" ");
-		printf("%s\n", tree->word);
-		for (int i = 0; i < n; i++)
-			printf(" ");
-		printf("%i\n", tree->size);
-		TreePrint(tree->right, n+2);
+Node* Delete(Node* tree, int key) {
+	Node* cur = tree;
+	Node* x = NULL;
+	while (cur != NULL) {
+		if (key == cur->key) {
+			x = cur;
+			break;
+		}
+		else 
+			if (key < cur->key)
+				cur = cur->left;
+			else
+				cur = cur->right;
+	}
+	if (x == NULL) 
+		return tree;
+	Node* y = NULL;
+	if (x->left == NULL || x->right == NULL) {
+		y = x;
+	}
+	else {
+		y = x->right;
+		while (y->left)
+			y = y->left;
+	}
+	Node* y_child = NULL;
+	if (y->left) 
+		y_child = y->left;
+
+	else 
+		y_child = y->right;
+
+	if (y_child) 
+		y_child->parent = y->parent;
+
+	if (y->parent) {
+		if (y == y->parent->left)
+			y->parent->left = y_child;
+		else 
+			y->parent->right = y_child;
 	}
 	else
-		return;
+		tree = y_child;
+	if (y != x)
+		x->key = y->key;
+	if (y->color == BLACK && y_child != NULL) 
+		tree = DeleteFixup(tree, y_child);
+	if (y != NULL) 
+		free(y);
+	return tree;
 }
 
-int main(void) {
-	tree* Tree = NULL;
-	AddElement(&Tree, "hello");
-	AddElement(&Tree, "hi");
-	AddElement(&Tree, "privet");
-	FindWidth(Tree);
-	TreePrint(Tree, 0);
-	return 0;
+//0.000005700000095 - Insert RB tree
+//0.000014800000031- Insert Binary tree 
+//0.000001200000014 - Search RB tree
+//0.000001100000013 - Search Binary
+
+//Добавление в красно-черное дерево происходит быстрее, чем в бинарное, однако поиск в последнем 
+//занимает чуть меньше времени, поиск по времени в этих деревьях примерно одинаков
+
+void Search(Node* root, int key) {
+	Node* cur = root;
+	while (cur != NULL) {
+		if (cur->key == key) {
+			//printf("in");
+			return;
+		}
+		else {
+			if (key < cur->key)
+				cur = cur->left;
+			else
+				cur = cur->right;
+		}
+
+	}
+    //printf("out");
 }
