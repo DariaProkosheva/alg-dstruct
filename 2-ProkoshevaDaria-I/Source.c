@@ -1,49 +1,17 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <inttypes.h> // uint32_t, uint8_t
+#include <inttypes.h> 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Header.h"
 
 #define SIZE 500000
 #define TRUE 1
 #define FALSE 0
 
-typedef struct chains {
-    char* value;
-    struct chains* next;
-} chains;
+hash_map* MapInit(hash_map* map) {
 
-chains* chain_search(chains* chain, char* str);
-chains* chain_remove(chains* chain, char* str);
-chains* chain_add(chains* chain, char* str);
-void chain_print(chains* chain);
-void chain_destroy(chains* chain);
-int chain_count(chains* chain);
-
-typedef struct hash_map_items {
-    char is_filled;
-    chains* chain;
-}hash_map_items;
-
-typedef struct hash_map {
-    hash_map_items* items;
-    uint32_t size;
-}hash_map;
-
-hash_map* map_init(hash_map* map);
-void map_add(hash_map* map, char* str);
-void map_remove(hash_map* map, char* str);
-char map_search(hash_map* map, char* str);
-void map_destroy(hash_map* map);
-void map_print(hash_map* map);
-char check_collision(hash_map* map, char* str);
-void create_CRC_table(void);
-unsigned int get_CRC32(void* buffer, unsigned int length);
-int buffer_length(char* buffer);
-unsigned int CRC32_table[256];
-
-hash_map* map_init(hash_map* map) {
     if (map == NULL) {
         map = (hash_map*)malloc(sizeof(hash_map));
 
@@ -63,7 +31,7 @@ hash_map* map_init(hash_map* map) {
             map->items[i].chain = NULL;
         }
 
-        create_CRC_table();
+        CreateCRCtable();
 
         return map;
     }
@@ -71,7 +39,7 @@ hash_map* map_init(hash_map* map) {
     return NULL;
 }
 
-int buffer_length(char* buffer) {
+int BufferLength(char* buffer) {
     int len = 0;
 
     if (buffer == NULL)
@@ -83,21 +51,22 @@ int buffer_length(char* buffer) {
     return len;
 }
 
-void map_add(hash_map* map, char* string) {
+void MapAdd(hash_map* map, char* string) {
+
     if (map != NULL && map->items != NULL && string != NULL) {
-        if (map_search(map, string)) {
+        if (MapSearch(map, string)) {
             return;
         }
 
-        uint32_t hash = get_CRC32(string, buffer_length(string));
+        uint32_t hash = GetCRC32(string, BufferLength(string));
         uint32_t index = hash % SIZE;
 
-        map->items[index].chain = chain_add(map->items[index].chain, string);
+        map->items[index].chain = ChainAdd(map->items[index].chain, string);
         map->items[index].is_filled = TRUE;
     }
 }
 
-int chain_count(chains* chain) {
+int ChainCount(chains* chain) {
     int count = 0;
 
     if (chain == NULL)
@@ -111,24 +80,24 @@ int chain_count(chains* chain) {
     return count;
 }
 
-void map_remove(hash_map* map, char* str) {
+void MapRemove(hash_map* map, char* str) {
     if (map != NULL && map->items != NULL && str != NULL) {
-        if (!map_search(map, str))
+        if (!MapSearch(map, str))
             return;
 
-        uint32_t hash = get_CRC32(str, buffer_length(str));
+        uint32_t hash = GetCRC32(str, BufferLength(str));
         uint32_t index = hash % SIZE;
 
-        map->items[index].chain = chain_remove(map->items[index].chain, str);
+        map->items[index].chain = ChainRemove(map->items[index].chain, str);
 
-        if (chain_count(map->items[index].chain) == 0)
+        if (ChainCount(map->items[index].chain) == 0)
             map->items[index].is_filled = FALSE;
     }
 }
 
-char check_collision(hash_map* map, char* str) {
+char CheckCollision(hash_map* map, char* str) {
     if (map != NULL && map->items != NULL && str != NULL) {
-        uint32_t hash = get_CRC32(str, buffer_length(str));
+        uint32_t hash = GetCRC32(str, BufferLength(str));
         uint32_t index = hash % SIZE;
 
         if (map->items[index].is_filled == FALSE)
@@ -141,29 +110,29 @@ char check_collision(hash_map* map, char* str) {
     return FALSE;
 }
 
-char map_search(hash_map* map, char* str) {
+char MapSearch(hash_map* map, char* str) {
     if (map != NULL && map->items != NULL && str != NULL) {
-        uint32_t hash = get_CRC32(str, buffer_length(str));
+        uint32_t hash = GetCRC32(str, BufferLength(str));
         uint32_t index = hash % SIZE;
 
         if (map->items[index].is_filled == FALSE)
             return FALSE;
 
-        if (chain_search(map->items[index].chain, str) != NULL)
+        if (ChainSearch(map->items[index].chain, str) != NULL)
             return TRUE;
     }
 
     return FALSE;
 }
 
-void map_destroy(hash_map* map) {
+void MapDestroy(hash_map* map) {
     if (map == NULL) {
         return;
     }
     else {
         for (int i = 0; i < map->size; i++)
             if (map->items[i].is_filled)
-                chain_destroy(map->items[i].chain);
+                ChainDestroy(map->items[i].chain);
 
         free(map->items);
     }
@@ -171,14 +140,14 @@ void map_destroy(hash_map* map) {
     free(map);
 }
 
-void map_print(hash_map* map) {
+void MapPrint(hash_map* map) {
     if (map != NULL)
         for (int i = 0; i < map->size; i++)
             if (map->items[i].is_filled)
-                chain_print(map->items[i].chain);
+                ChainPrint(map->items[i].chain);
 }
 
-void create_CRC_table(void) {
+void CreateCRCtable(void) {
     uint32_t CRC_32;
     unsigned int index = 0;
     unsigned int bit = 0;
@@ -196,7 +165,7 @@ void create_CRC_table(void) {
     }
 }
 
-unsigned int get_CRC32(void* buffer, unsigned int buffer_length) {
+unsigned int GetCRC32(void* buffer, unsigned int buffer_length) {
     uint32_t CRC32_value = 0xffffffff;
     unsigned char* tmp_buffer = (unsigned char*)buffer;
 
@@ -206,7 +175,7 @@ unsigned int get_CRC32(void* buffer, unsigned int buffer_length) {
     return (CRC32_value ^ 0xffffffff);
 }
 
-chains* chain_search(chains* chain, char* str) {
+chains* ChainSearch(chains* chain, char* str) {
     if (chain == NULL)
         return NULL;
 
@@ -220,14 +189,14 @@ chains* chain_search(chains* chain, char* str) {
     return NULL;
 }
 
-chains* chain_add(chains* chain, char* str) {
+chains* ChainAdd(chains* chain, char* str) {
     if (chain == NULL) {
         chains* newSlot = (chains*)malloc(sizeof(chains));
 
         if (newSlot != NULL)
             chain = newSlot;
 
-        chain->value = (char*)malloc(sizeof(char) * buffer_length(str));
+        chain->value = (char*)malloc(sizeof(char) * BufferLength(str));
 
         if (chain->value != NULL)
             strcpy(chain->value, str);
@@ -243,7 +212,7 @@ chains* chain_add(chains* chain, char* str) {
             tmp = tmp->next;
 
         chains* newSlot = (chains*)malloc(sizeof(chains));
-        newSlot->value = (char*)malloc(sizeof(char) * buffer_length(str));
+        newSlot->value = (char*)malloc(sizeof(char) * BufferLength(str));
 
         if (newSlot != NULL && newSlot->value != NULL) {
             tmp->next = newSlot;
@@ -255,11 +224,11 @@ chains* chain_add(chains* chain, char* str) {
     }
 }
 
-chains* chain_remove(chains* chain, char* str) {
+chains* ChainRemove(chains* chain, char* str) {
     if (chain == NULL)
         return NULL;
 
-    chains* removeSlot = chain_search(chain, str);
+    chains* removeSlot = ChainSearch(chain, str);
 
     if (chain == removeSlot) {
         chain = chain->next;
@@ -281,7 +250,7 @@ chains* chain_remove(chains* chain, char* str) {
     return chain;
 }
 
-void chain_destroy(chains* chain) {
+void ChainDestroy(chains* chain) {
     chains* remove = chain;
 
     while (chain != NULL) {
@@ -291,7 +260,7 @@ void chain_destroy(chains* chain) {
     }
 }
 
-void chain_print(chains* chain) {
+void ChainPrint(chains* chain) {
     if (chain == NULL)
         return;
 
@@ -302,9 +271,10 @@ void chain_print(chains* chain) {
 }
 
 int main(void) {
+
     char command;
     hash_map* map = NULL;
-    map = map_init(map);
+    map = MapInit(map);
     char value[100] = { '\0' };
 
     while (scanf("%c", &command) >= 1) {
@@ -315,15 +285,15 @@ int main(void) {
 
         switch (command) {
         case 'a':
-            map_add(map, value);
+            MapAdd(map, value);
             break;
 
         case 'r':
-            map_remove(map, value);
+            MapRemove(map, value);
             break;
 
         case 'f':
-            if (map_search(map, value))
+            if (MapSearch(map, value))
                 puts("yes");
             else
                 puts("no");
@@ -331,12 +301,12 @@ int main(void) {
             break;
 
         case 'p':
-            map_print(map);
+            MapPrint(map);
             putchar('\n');
             break;
 
         case 'q':
-            map_destroy(map);
+            MapDestroy(map);
             return 0;
         }
     }

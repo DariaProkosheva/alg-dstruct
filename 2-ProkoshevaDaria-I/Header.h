@@ -7,7 +7,7 @@ typedef struct chains {
 
 chains* ChainSearch(chains* chain, char* str);
 chains* ChainRemove(chains* chain, char* str);
-chains* ÑhainAdd(chains* chain, char* str);
+chains* ChainAdd(chains* chain, char* str);
 void ChainPrint(chains* chain);
 void ChainDestroy(chains* chain);
 int ChainCount(chains* chain);
